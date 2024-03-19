@@ -1,42 +1,42 @@
+import asyncio
+import logging
+import os
+import random
+
+import httpx
 from starlette.applications import Starlette
+from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
-import httpx
-import os
-import logging
-
 
 logging.getLogger().setLevel("DEBUG")
 
 client = httpx.AsyncClient()
-local = os.getenv("FLY_APP_NAME")
+local = not bool(os.getenv("FLY_APP_NAME"))
+print(local)
+flyctl = flyctl = "fly" if local else "/root/.fly/bin/fly"
+print(flyctl)
 
 
 def key(version_id: str) -> str:
     return f"flycate-model-{version_id[:4]}"
 
 
-async def run_command(command):
-    process = await asyncio.create_subprocess_shell(
-        command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await process.communicate()
-    if process.returncode == 0:
-        return stdout.decode().strip()
-    else:
-        raise Exception(f"Command failed with error {stderr.decode().strip()}")
+async def run_command(command: str) -> int:
+    print("running", command)
+    process = await asyncio.create_subprocess_shell(command)
+    return await process.wait()
 
 
-async def create_app(request):
+async def create_app(request: Request) -> JSONResponse:
     data = await request.json()
     docker_image_uri = data["docker_image_uri"]
-    version_id = data["version_id"]
-    cmd = "fly" if local else "/root/.fly/bin/fly"
-
-    os.system(
-        f"{cmd} launch --image {docker_image_uri} --name {key(version_id)} "
+    app_name = key(data["version_id"])
+    hardware = data.get("hardware", "a100-40gb")
+    if await run_command(f"{flyctl} status -a {app_name}") == 0:
+        return JSONResponse({"message": f"{app_name} already exists"})
+    await run_command(
+        f"{flyctl} launch --image {docker_image_uri} --name {app_name} "
         "--vm-size l40s "
         "--internal-port 5000 "
         "--org replicate "
@@ -45,11 +45,11 @@ async def create_app(request):
         "--yes"
     )
     if not local:
-        os.system("rm fly.toml")
-    return JSONResponse({"message": f"App created: {key(version_id)}"})
+        await run_command("rm fly.toml")
+    return JSONResponse({"message": f"App created: {app_name}"})
 
 
-async def handle_predict(request):
+async def handle_predict(request: Request) -> Response:
     try:
         try:
             data = await request.json()
@@ -58,7 +58,6 @@ async def handle_predict(request):
         except Exception as e:
             print(repr(e))
             raise
-
         try:
             for i in range(10):
                 response = await client.post(
@@ -81,6 +80,7 @@ async def handle_predict(request):
         )
     except Exception as e:
         print(repr(e))
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 routes = [

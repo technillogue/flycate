@@ -1,20 +1,17 @@
-# fly.toml app configuration file generated for foo123 on 2024-03-19T10:31:27-07:00
+# fly.toml app configuration file generated for flycate on 2024-03-19T11:31:52-07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'foo123'
+app = 'flycate'
 primary_region = 'sjc'
 
-[build]
-  image = 'whalesay'
-
 [http_service]
-  internal_port = 8080
+  internal_port = 8000
   force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
+  auto_stop_machines = false
+  auto_start_machines = false
+  min_machines_running = 1
   processes = ['app']
 
 [[vm]]
