@@ -26,3 +26,5 @@ GET?
 PATCH?
 
 fly launch --region ord --image r8.im/mistralai/mistral-7b-v0.1 --vm-size l40s --internal-port 5000
+
+curl -s -d '{ "version": "740618b0c24c0ea4ce5f49fcfef02fcd0bdd6a9f1b0c5e7c02ad78e9b3b190a6", "input": { "prompt": "Tell me a short joke", "max_length": 32 } }' -H 'Content-Type: application/json' http://localhost:8080/v1/predictions|jq
