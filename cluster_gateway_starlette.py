@@ -13,9 +13,7 @@ logging.getLogger().setLevel("DEBUG")
 
 client = httpx.AsyncClient()
 local = not bool(os.getenv("FLY_APP_NAME"))
-print(local)
 flyctl = flyctl = "fly" if local else "/root/.fly/bin/fly"
-print(flyctl)
 
 
 def key(version_id: str) -> str:
@@ -50,37 +48,26 @@ async def create_app(request: Request) -> JSONResponse:
 
 
 async def handle_predict(request: Request) -> Response:
+    data = await request.json()
+    version_id = data.pop("version")
     try:
-        try:
-            data = await request.json()
-            version_id = data.pop("version")
-            print("request:", request)
-        except Exception as e:
-            print(repr(e))
-            raise
-        try:
-            for i in range(10):
-                response = await client.post(
-                    f"https://{key(version_id)}.fly.dev/predictions", json=data
-                )
-                print("response:", response)
-                if response.status_code == 409:
-                    await asyncio.sleep(random.random())
-                    continue
-                return Response(
-                    content=response.content,
-                    status_code=response.status_code,
-                    headers=response.headers,
-                )
-        except Exception as e:
-            return JSONResponse({"error": str(e)}, status_code=500)
-        return JSONResponse(
-            {"error": "Failed to get prediction after multiple retries"},
-            status_code=500,
-        )
+        # retry for about 15s, which should be enough for good models to boot
+        for i in range(30):
+            response = await client.post(
+                f"https://{key(version_id)}.fly.dev/predictions", json=data
+            )
+            print("response:", response)
+            if response.status_code == 409:
+                await asyncio.sleep(random.random())
+                continue
+            return Response(content=response.content, status_code=response.status_code)
     except Exception as e:
         print(repr(e))
         return JSONResponse({"error": str(e)}, status_code=500)
+    return JSONResponse(
+        {"error": "Failed to get prediction after multiple retries"},
+        status_code=500,
+    )
 
 
 routes = [

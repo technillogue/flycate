@@ -1,3 +1,9 @@
+# an implementation of the replicate API on fly
+
+this is a simplified cluster that provides access to the cog API at scale. rather than providing the true replicate predictions interface, it simply routes predictions to fly apps, which natively provide load balancing and scaling.
+
+---
+
 POST https://api.replicate.com/v1/predictions
 {
   "version": "...",
@@ -19,7 +25,7 @@ fetch the version id like docker image?
 
 LookupVersionMetadata
 
-for demo reasons just add a separate route to create and update apps (a type of VersionDeployment thing) given metadata and shit
+for demo reasons just add a separate route to create and update apps (a type of VersionDeployment thing) given metadata and stuff
 
 POST /_internal/apps/<version>
 GET?
