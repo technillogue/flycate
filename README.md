@@ -1,8 +1,10 @@
 # an implementation of the replicate API on fly
 
-this is a simplified cluster that provides access to the cog API at scale. rather than providing the true replicate predictions interface, it simply routes predictions to fly apps, which natively provide load balancing and scaling.
+this is a simplified cluster that provides access to the cog API at scale. rather than providing the true replicate predictions interface, it simply routes predictions to fly apps, which natively provide load balancing and scaling. the default is two replicas and scale to zero.
 
----
+
+<details>
+<summary>notes</summary>
 
 POST https://api.replicate.com/v1/predictions
 {
@@ -34,3 +36,4 @@ PATCH?
 fly launch --region ord --image r8.im/mistralai/mistral-7b-v0.1 --vm-size l40s --internal-port 5000
 
 curl -s -d '{ "version": "740618b0c24c0ea4ce5f49fcfef02fcd0bdd6a9f1b0c5e7c02ad78e9b3b190a6", "input": { "prompt": "Tell me a short joke", "max_length": 32 } }' -H 'Content-Type: application/json' http://localhost:8080/v1/predictions|jq
+</details>

@@ -11,7 +11,7 @@ from starlette.routing import Route
 
 logging.getLogger().setLevel("DEBUG")
 
-client = httpx.AsyncClient()
+client = httpx.AsyncClient(timeout=10)
 local = not bool(os.getenv("FLY_APP_NAME"))
 flyctl = flyctl = "fly" if local else "/root/.fly/bin/fly"
 
@@ -52,7 +52,7 @@ async def handle_predict(request: Request) -> Response:
     version_id = data.pop("version")
     try:
         # retry for about 15s, which should be enough for good models to boot
-        for i in range(30):
+        for i in range(20):
             response = await client.post(
                 f"https://{key(version_id)}.fly.dev/predictions", json=data
             )
